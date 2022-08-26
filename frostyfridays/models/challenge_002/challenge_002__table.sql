@@ -1,12 +1,19 @@
 {{ config(
-    pre_hook = "create stage if not exists challenge_002__int_stage; 
-                PUT file://./models/challenge_002/employees.parquet @challenge_002__int_stage;
-                create or replace table challenge_002__raw (data_raw variant);
-                copy into challenge_002__raw from (
-                select $1 from @challenge_002__int_stage/employees.parquet )
-                file_format = (type=PARQUET);",
+    pre_hook = create_stage(
+        stage_name = 'challenge_002__int_stage', 
+        options = "url = 's3://frostyfridaychallenges/challenge_2/' file_format = (type = 'PARQUET')", 
+        ),
     materialized='table'
 ) }}
+
+with 
+base as (
+    select     
+        $1 as data_raw,
+        metadata$filename as file_name,
+        metadata$file_row_number as row_number
+    from @challenge_002__int_stage
+)
 
 select 
     data_raw:employee_id::varchar employee_id,
@@ -15,4 +22,4 @@ select
     data_raw:country::varchar country,
     data_raw:last_name::varchar last_name,
     data_raw:title::varchar title
-from challenge_002__raw
+from base
