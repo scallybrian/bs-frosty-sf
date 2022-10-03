@@ -1,0 +1,48 @@
+-- use schema frosty_fridays;
+
+-- create table home_sales (
+-- sale_date date,
+-- price number(11, 2)
+-- );
+
+-- insert into home_sales (sale_date, price) values
+-- ('2013-08-01'::date, 290000.00),
+-- ('2014-02-01'::date, 320000.00),
+-- ('2015-04-01'::date, 399999.99),
+-- ('2016-04-01'::date, 400000.00),
+-- ('2017-04-01'::date, 470000.00),
+-- ('2018-04-01'::date, 510000.00);
+
+create or replace function create_bins(
+    value number,
+    bin_lower array,
+    bin_upper array
+)
+returns int
+language python
+runtime_version = '3.8'
+handler = 'create_bins'
+as
+$$
+def create_bins(value:float, bin_lower:list, bin_upper:list):
+    bin_index = 0
+    for i, b in enumerate(bin_lower):
+        if value >= bin_lower[i] and value <= bin_upper[i]:
+            bin_index = i + 1
+            break
+        else:
+            print('')
+
+    return bin_index
+
+$$;
+
+
+select 
+    sale_date, 
+    price, 
+    create_bins(price, [0, 2, 310001, 400001], [1, 310000, 400000, 500000]) bucket_set_1,
+    create_bins(price, [0, 210001], [210000, 350000]) bucket_set_2,
+    create_bins(price, [0, 250001, 290002, 320001, 360001, 410001], [250000, 290001, 320000, 360000, 410000, 470001]) bucket_set_3
+from home_sales
+    
